@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>กระดานภารกิจ</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#14131a">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quest Board">
+
+<style>
+  :root{
+    --ink:#14131a; --panel:#1e1c26; --panel-2:#252230; --line:#332f42;
+    --bone:#e8e3da; --muted:#8c8699;
+    --copper:#c87b4e; --silver:#b9c1cc; --gold:#e3b23c; --jade:#4fb286; --blood:#a4453f;
+    --display:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Noto Serif Thai",serif;
+    --body:system-ui,-apple-system,"Segoe UI","Noto Sans Thai",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;background:var(--ink);color:var(--bone);
+    font-family:var(--body);font-size:15px;line-height:1.5;
+    background-image:radial-gradient(1200px 600px at 50% -10%,#241f33 0%,transparent 60%);
+    min-height:100vh;overscroll-behavior-y:contain;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:0 14px 90px}
+
+  /* ---- แถบวันที่ + กระเป๋าเหรียญ ---- */
+  .bar-top{position:sticky;top:0;z-index:20;background:rgba(20,19,26,.93);backdrop-filter:blur(12px);
+    margin:0 -14px;padding:12px 14px 10px;border-bottom:1px solid var(--line)}
+  .bar-top .inner{display:flex;align-items:center;gap:12px;max-width:860px;margin:0 auto}
+  .brand{font:10px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#5d5670;margin-bottom:6px}
+  .datebig{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .datebig .day{font-family:var(--display);font-size:21px;font-weight:600;letter-spacing:.01em;white-space:nowrap}
+  .datebig .clock{font:600 15px/1 var(--mono);color:var(--gold);font-variant-numeric:tabular-nums}
+  .datebig .clock .sep{animation:blink 2s steps(1,end) infinite}
+  @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:.25}}
+  .subline{font:11px/1.5 var(--mono);color:var(--muted);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap}
+  .subline .hot{color:var(--copper)}
+
+  .purse{display:flex;gap:6px;flex:none}
+  .coin{display:flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--line);
+    border-radius:999px;padding:4px 9px 4px 4px}
+  .disc{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;
+    font:600 9px/1 var(--mono);color:#2a2130;flex:none;
+    box-shadow:inset 0 -2px 3px rgba(0,0,0,.35),inset 0 2px 2px rgba(255,255,255,.35)}
+  .d-c{background:linear-gradient(160deg,#e09b6f,#a75f38)}
+  .d-s{background:linear-gradient(160deg,#e2e8ef,#8e96a2)}
+  .d-g{background:linear-gradient(160deg,#f6d67e,#c08d1e)}
+  .coin b{font:600 14px/1 var(--mono);font-variant-numeric:tabular-nums}
+  .coin.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.2)}100%{transform:scale(1)}}
+  @media(max-width:430px){
+    .purse{flex-direction:column;gap:3px}
+    .coin{padding:2px 7px 2px 2px}
+    .coin b{font-size:12px}
+    .disc{width:15px;height:15px;font-size:8px}
+    .datebig .day{font-size:18px}
+  }
+
+  nav{display:flex;gap:2px;margin:14px 0 16px;border-bottom:1px solid var(--line)}
+  nav button{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);
+    font-family:var(--body);font-size:14px;padding:11px 8px;cursor:pointer;margin-bottom:-1px}
+  nav button[aria-selected="true"]{color:var(--bone);border-bottom-color:var(--gold)}
+
+  .group{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+  .group-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .group-head h2{font-family:var(--display);font-size:17px;margin:0;font-weight:600;flex:1;min-width:0}
+  .bar{height:3px;background:var(--line);border-radius:2px;width:64px;overflow:hidden;flex:none}
+  .bar i{display:block;height:100%;background:var(--jade);transition:width .35s ease}
+  .pct{font:11px/1 var(--mono);color:var(--muted);flex:none}
+
+  ul{list-style:none;margin:0;padding:0}
+  .node{border-bottom:1px solid rgba(51,47,66,.6)}
+  .node:last-child{border-bottom:0}
+  .row{display:flex;align-items:center;gap:9px;padding:10px 12px}
+  .kids{padding-left:14px;border-left:1px solid var(--line);margin-left:24px}
+
+  .seal{width:26px;height:26px;border-radius:50%;border:1.5px solid #4a445c;background:transparent;
+    cursor:pointer;flex:none;display:grid;place-items:center;transition:.15s;padding:0;color:transparent}
+  .seal.on{background:var(--jade);border-color:var(--jade);color:#10261d;font-size:14px;font-weight:700}
+  .seal.on::after{content:"✓"}
+
+  .cell{flex:1;min-width:0}
+  .title{overflow-wrap:anywhere}
+  .done .title{color:var(--muted);text-decoration:line-through}
+  .when{font:10px/1.4 var(--mono);color:var(--jade);opacity:.75;display:block}
+  .tag{font:9px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--gold);
+    border:1px solid rgba(227,178,60,.4);border-radius:4px;padding:3px 4px;flex:none}
+  .price{font:13px/1 var(--mono);color:var(--muted);white-space:nowrap;flex:none}
+  .price .c{color:var(--copper)} .price .s{color:var(--silver)} .price .g{color:var(--gold)}
+
+  .mini{background:none;border:0;color:#5d5670;cursor:pointer;font-size:15px;
+    min-width:30px;height:30px;border-radius:6px;flex:none}
+  .mini:active{background:rgba(255,255,255,.08);color:var(--bone)}
+  .mini.del:active{color:var(--blood)}
+
+  .form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:11px 12px;background:rgba(0,0,0,.18)}
+  input[type=text],input[type=number]{background:var(--ink);border:1px solid var(--line);color:var(--bone);
+    border-radius:8px;padding:10px;font-family:var(--body);font-size:16px}
+  input[type=text]{flex:1;min-width:140px}
+  input[type=number]{width:60px;font-family:var(--mono);text-align:center}
+  input:focus{outline:2px solid var(--gold);outline-offset:1px}
+  label.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+  label.chk input{width:18px;height:18px;accent-color:var(--gold)}
+  .coinset{display:flex;align-items:center;gap:4px}
+  .coinset span{font:11px/1 var(--mono);color:var(--muted)}
+  .btn{background:var(--gold);color:#2a2130;border:0;border-radius:8px;padding:11px 16px;
+    font-family:var(--body);font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--muted)}
+  .btn:disabled{opacity:.35}
+
+  .shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:9px}
+  .card.afford{border-color:rgba(227,178,60,.45)}
+  .card h3{margin:0;font-family:var(--display);font-size:17px;font-weight:600}
+  .card .foot{display:flex;align-items:center;gap:8px;margin-top:auto}
+  .owned{font:11px/1 var(--mono);color:var(--jade)}
+
+  .empty{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--muted)}
+  .log{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .log li{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(51,47,66,.5)}
+  .log time{color:#5d5670;flex:none;font-variant-numeric:tabular-nums}
+  .stat{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+  .hint{font-size:12px;color:var(--muted);margin:10px 2px}
+  .hidden{display:none}
+
+  #install{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:40;
+    display:none;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--gold);
+    border-radius:12px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:600px;margin:0 auto}
+  #install p{margin:0;flex:1;font-size:13px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="bar-top">
+    <div class="inner">
+      <div style="flex:1;min-width:0">
+        <div class="brand">Quest Board</div>
+        <div class="datebig">
+          <span class="day" id="dToday">—</span>
+          <span class="clock" id="dClock">—</span>
+        </div>
+        <div class="subline">
+          <span id="dWeek">—</span>
+          <span>·</span>
+          <span id="dReset">—</span>
+        </div>
+      </div>
+      <div class="purse" id="purse">
+        <div class="coin"><span class="disc d-g">G</span><b id="pG">0</b></div>
+        <div class="coin"><span class="disc d-s">S</span><b id="pS">0</b></div>
+        <div class="coin"><span class="disc d-c">C</span><b id="pC">0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <nav>
+    <button id="tab-q" aria-selected="true">ภารกิจ</button>
+    <button id="tab-s" aria-selected="false">ร้านรางวัล</button>
+    <button id="tab-l" aria-selected="false">สรุป</button>
+  </nav>
+
+  <section id="view-q">
+    <div id="groups"></div>
+    <div class="form" style="border:1px solid var(--line);border-radius:12px;background:var(--panel)">
+      <input type="text" id="gName" placeholder="ชื่อหมวดใหม่ เช่น งาน / สุขภาพ">
+      <button class="btn" id="gAdd">เพิ่มหมวด</button>
+    </div>
+    <p class="hint">แตะวงกลมเพื่อจบภารกิจแล้วรับเหรียญ • ＋ = เพิ่มข้อย่อย • ภารกิจ <b>รายสัปดาห์</b> รีเซ็ตเองทุกเที่ยงคืนวันอาทิตย์ • 100 Copper = 1 Silver, 100 Silver = 1 Gold</p>
+  </section>
+
+  <section id="view-s" class="hidden">
+    <div class="shop" id="shop"></div>
+    <div class="form" style="border:1px solid var(--line);border-radius:12px;background:var(--panel)">
+      <input type="text" id="rName" placeholder="รางวัลที่อยากได้ เช่น ดูหนัง 1 เรื่อง">
+      <div class="coinset">
+        <span>G</span><input type="number" id="rG" min="0" value="0">
+        <span>S</span><input type="number" id="rS" min="0" value="0">
+        <span>C</span><input type="number" id="rC" min="0" value="50">
+      </div>
+      <button class="btn" id="rAdd">เพิ่มรางวัล</button>
+    </div>
+  </section>
+
+  <section id="view-l" class="hidden">
+    <div id="stats"></div>
+    <h2 style="font-family:var(--display);font-size:18px;margin:22px 0 8px">บันทึกล่าสุด</h2>
+    <ul class="log" id="log"></ul>
+    <div style="margin-top:24px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost" id="expBtn">สำรองข้อมูล (.json)</button>
+      <button class="btn ghost" id="impBtn">กู้คืนจากไฟล์</button>
+      <input type="file" id="impFile" accept="application/json" class="hidden">
+      <button class="btn ghost" id="wipeBtn" style="border-color:rgba(164,69,63,.5);color:#c9736d">ล้างข้อมูล</button>
+    </div>
+    <p class="hint" id="storageNote"></p>
+  </section>
+</div>
+
+<div id="install">
+  <p>ติดตั้งลงหน้าโฮมเพื่อเปิดเต็มจอและใช้ออฟไลน์ได้</p>
+  <button class="btn" id="installBtn">ติดตั้ง</button>
+  <button class="mini" id="installX">✕</button>
+</div>
+
+<script>
+/* ---------- storage ---------- */
+const KEY = "questboard_v1";
+const hasCloud = typeof window.storage !== "undefined" && window.storage;
+const store = {
+  async load(){
+    if (hasCloud){ try{ const r = await window.storage.get(KEY); return r ? JSON.parse(r.value) : null; }catch(e){ return null; } }
+    try{ const v = localStorage.getItem(KEY); return v ? JSON.parse(v) : null; }catch(e){ return null; }
+  },
+  async save(d){
+    const s = JSON.stringify(d);
+    if (hasCloud){ try{ await window.storage.set(KEY, s); return; }catch(e){} }
+    try{ localStorage.setItem(KEY, s); }catch(e){}
+  }
+};
+
+let S = { copper:0, earned:0, spent:0, groups:[], rewards:[], log:[] };
+const uid = () => Math.random().toString(36).slice(2,9);
+const save = () => store.save(S);
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+
+/* ---------- เวลา & วันที่ ---------- */
+const TH = "th-TH";
+function weekKey(d=new Date()){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  const w = Math.ceil(((t - y0)/86400000 + 1)/7);
+  return t.getUTCFullYear() + "-W" + String(w).padStart(2,"0");
+}
+const dayKey = (d=new Date()) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+let WK = weekKey();
+let curDay = dayKey();
+
+function mondayOf(d=new Date()){
+  const day = d.getDay() || 7;                        // จันทร์=1 ... อาทิตย์=7
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - (day - 1));
+}
+function nextMonday(d=new Date()){
+  const m = mondayOf(d);
+  return new Date(m.getFullYear(), m.getMonth(), m.getDate() + 7); // เที่ยงคืนวันจันทร์ถัดไป
+}
+function tickClock(){
+  const now = new Date();
+  $("dToday").textContent = now.toLocaleDateString(TH, {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+  const hh = String(now.getHours()).padStart(2,"0"), mm = String(now.getMinutes()).padStart(2,"0");
+  $("dClock").innerHTML = `${hh}<span class="sep">:</span>${mm}`;
+
+  const mon = mondayOf(now), sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate()+6);
+  const opt = {day:"numeric", month:"short"};
+  $("dWeek").textContent = `สัปดาห์ ${mon.toLocaleDateString(TH,opt)} – ${sun.toLocaleDateString(TH,opt)}`;
+
+  const ms = nextMonday(now) - now;
+  const dd = Math.floor(ms/86400000), hrs = Math.floor(ms%86400000/3600000);
+  const el = $("dReset");
+  el.textContent = dd > 0 ? `รีเซ็ตรายสัปดาห์อีก ${dd} วัน ${hrs} ชม.` : `รีเซ็ตรายสัปดาห์อีก ${hrs} ชม.`;
+  el.className = (dd === 0) ? "hot" : "";
+}
+function fmtWhen(ts){
+  if (!ts) return "";
+  const d = new Date(ts), now = new Date();
+  const t = d.toLocaleTimeString(TH, {hour:"2-digit", minute:"2-digit"});
+  if (dayKey(d) === dayKey(now)) return "เสร็จวันนี้ " + t;
+  const y = new Date(now.getFullYear(), now.getMonth(), now.getDate()-1);
+  if (dayKey(d) === dayKey(y)) return "เสร็จเมื่อวาน " + t;
+  return "เสร็จ " + d.toLocaleDateString(TH,{day:"numeric",month:"short"}) + " " + t;
+}
+
+function fmt(c){
+  const g = Math.floor(c/10000), s = Math.floor((c%10000)/100), k = c%100, p = [];
+  if (g) p.push(`<span class="g">${g}g</span>`);
+  if (s) p.push(`<span class="s">${s}s</span>`);
+  if (k || !p.length) p.push(`<span class="c">${k}c</span>`);
+  return p.join(" ");
+}
+function addLog(text, amount){ S.log.unshift({t:Date.now(), text, amount}); S.log = S.log.slice(0,60); }
+
+function walk(nodes, fn){ nodes.forEach(n => { fn(n); walk(n.children, fn); }); }
+function findNode(id){ let hit=null; S.groups.forEach(g => walk(g.children, n => { if(n.id===id) hit=n; })); return hit; }
+function removeNode(id){
+  const strip = arr => {
+    const i = arr.findIndex(n => n.id===id);
+    if (i>-1){ arr.splice(i,1); return true; }
+    return arr.some(n => strip(n.children));
+  };
+  S.groups.some(g => strip(g.children));
+}
+function addChild(pid, node){
+  const g = S.groups.find(x => x.id===pid);
+  if (g){ g.children.push(node); return; }
+  const p = findNode(pid);
+  if (p) p.children.push(node);
+}
+function resetWeekly(){
+  let ch = false;
+  S.groups.forEach(g => walk(g.children, n => {
+    if (n.weekly && n.done && n.week !== WK){ n.done=false; n.week=null; n.doneAt=null; ch=true; }
+  }));
+  if (ch) save();
+  return ch;
+}
+
+/* ---------- render ---------- */
+function renderPurse(pop){
+  const c = S.copper;
+  $("pG").textContent = Math.floor(c/10000);
+  $("pS").textContent = Math.floor((c%10000)/100);
+  $("pC").textContent = c%100;
+  if (pop) [...$("purse").children].forEach(el => { el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); });
+}
+function coinInputs(val=0){
+  const g = Math.floor(val/10000), s = Math.floor((val%10000)/100), c = val%100;
+  return `<div class="coinset">
+    <span>G</span><input type="number" min="0" value="${g}" data-k="g">
+    <span>S</span><input type="number" min="0" value="${s}" data-k="s">
+    <span>C</span><input type="number" min="0" value="${c}" data-k="c">
+  </div>`;
+}
+const readCoins = f => {
+  const v = k => parseInt(f.querySelector(`[data-k="${k}"]`).value || 0, 10) || 0;
+  return v("g")*10000 + v("s")*100 + v("c");
+};
+function nodeHTML(n){
+  return `<li class="node" data-id="${n.id}">
+    <div class="row ${n.done?"done":""}">
+      <button class="seal ${n.done?"on":""}" data-act="toggle" aria-label="ทำเสร็จ"></button>
+      <span class="cell">
+        <span class="title">${esc(n.title)}</span>
+        ${n.done && n.doneAt ? `<span class="when">${fmtWhen(n.doneAt)}</span>` : ""}
+      </span>
+      ${n.weekly ? '<span class="tag">สัปดาห์</span>' : ''}
+      <span class="price">${fmt(n.coin)}</span>
+      <button class="mini" data-act="sub" aria-label="เพิ่มข้อย่อย">＋</button>
+      <button class="mini" data-act="edit" aria-label="แก้ไข">✎</button>
+      <button class="mini del" data-act="del" aria-label="ลบ">✕</button>
+    </div>
+    <ul class="kids">${n.children.map(nodeHTML).join("")}</ul>
+  </li>`;
+}
+function renderQuests(){
+  const box = $("groups");
+  if (!S.groups.length){ box.innerHTML = `<div class="empty">ยังไม่มีหมวด — ตั้งชื่อหมวดแรกด้านล่าง</div>`; return; }
+  box.innerHTML = S.groups.map(g => {
+    let tot=0, done=0;
+    walk(g.children, n => { tot++; if(n.done) done++; });
+    const pct = tot ? Math.round(done/tot*100) : 0;
+    return `<div class="group" data-gid="${g.id}">
+      <div class="group-head">
+        <h2>${esc(g.name)}</h2>
+        <span class="bar"><i style="width:${pct}%"></i></span>
+        <span class="pct">${done}/${tot}</span>
+        <button class="mini del" data-act="delgroup" aria-label="ลบหมวด">✕</button>
+      </div>
+      <ul>${g.children.map(nodeHTML).join("")}</ul>
+      <div class="form">
+        <input type="text" data-k="t" placeholder="ภารกิจใหม่">
+        ${coinInputs(10)}
+        <label class="chk"><input type="checkbox" data-k="w"> รายสัปดาห์</label>
+        <button class="btn" data-act="addtask">เพิ่ม</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function renderShop(){
+  const box = $("shop");
+  if (!S.rewards.length){ box.innerHTML = `<div class="empty" style="grid-column:1/-1">ร้านยังว่าง — เพิ่มรางวัลที่อยากแลกด้านล่าง</div>`; return; }
+  box.innerHTML = S.rewards.map(r => {
+    const ok = S.copper >= r.price;
+    return `<div class="card ${ok?"afford":""}" data-rid="${r.id}">
+      <h3>${esc(r.name)}</h3>
+      <div class="price">${fmt(r.price)}</div>
+      <div class="foot">
+        <button class="btn" data-act="buy" ${ok?"":"disabled"}>แลกรางวัล</button>
+        ${r.bought ? `<span class="owned">แลกแล้ว ${r.bought}×</span>` : ""}
+        <button class="mini del" data-act="delreward" style="margin-left:auto">✕</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+function renderLog(){
+  $("stats").innerHTML = `
+    <div class="stat"><span>เหรียญในกระเป๋า</span><b class="price">${fmt(S.copper)}</b></div>
+    <div class="stat"><span>หาได้ทั้งหมด</span><b class="price">${fmt(S.earned)}</b></div>
+    <div class="stat"><span>ใช้ไปทั้งหมด</span><b class="price">${fmt(S.spent)}</b></div>`;
+  $("log").innerHTML = S.log.length ? S.log.map(e => {
+    const d = new Date(e.t);
+    const stamp = d.toLocaleDateString(TH,{day:"numeric",month:"short"}) + " " +
+                  d.toLocaleTimeString(TH,{hour:"2-digit",minute:"2-digit"});
+    const amt = e.amount>0 ? `<span class="price" style="margin-left:auto">+${fmt(e.amount)}</span>`
+              : e.amount<0 ? `<span class="price" style="margin-left:auto;opacity:.7">−${fmt(-e.amount)}</span>` : "";
+    return `<li><time>${stamp}</time><span>${esc(e.text)}</span>${amt}</li>`;
+  }).join("") : `<li style="border:0;color:#5d5670">ยังไม่มีบันทึก</li>`;
+  $("storageNote").textContent = hasCloud
+    ? "บันทึกอัตโนมัติในพื้นที่เก็บของ artifact"
+    : "บันทึกอัตโนมัติในเครื่องนี้ (localStorage) — แนะนำให้กดสำรองข้อมูลเป็นระยะ";
+}
+function render(pop){
+  tickClock(); renderPurse(pop); renderQuests(); renderShop(); renderLog();
+}
+
+/* ---------- actions ---------- */
+function toggle(id){
+  const n = findNode(id); if (!n) return;
+  if (!n.done){
+    n.done=true; n.week=WK; n.doneAt=Date.now();
+    S.copper+=n.coin; S.earned+=n.coin;
+    addLog("สำเร็จ: "+n.title, n.coin);
+    if (navigator.vibrate) navigator.vibrate(12);
+  } else {
+    n.done=false; n.week=null; n.doneAt=null;
+    S.copper=Math.max(0,S.copper-n.coin); S.earned=Math.max(0,S.earned-n.coin);
+    addLog("ยกเลิก: "+n.title, -n.coin);
+  }
+  save(); render(n.done);
+}
+function inlineForm(li, mode){
+  if (li.querySelector(":scope > .form")) return;
+  const n = findNode(li.dataset.id);
+  const f = document.createElement("div");
+  f.className = "form";
+  const isEdit = mode === "edit";
+  if (isEdit) li.querySelector(".row").classList.add("hidden");
+  f.innerHTML = `<input type="text" data-k="t" value="${isEdit?esc(n.title):""}" placeholder="${isEdit?"":"ชื่อข้อย่อย"}">
+    ${coinInputs(isEdit ? n.coin : 10)}
+    <label class="chk"><input type="checkbox" data-k="w" ${isEdit&&n.weekly?"checked":""}> รายสัปดาห์</label>
+    <button class="btn" data-act="${isEdit?"savenode":"savesub"}">บันทึก</button>
+    <button class="btn ghost" data-act="cancel">ยกเลิก</button>`;
+  li.querySelector(".row").after(f);
+  f.querySelector('[data-k="t"]').focus();
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act, li = b.closest(".node"), grp = b.closest(".group"), card = b.closest(".card");
+
+  if (act==="toggle") return toggle(li.dataset.id);
+  if (act==="edit")   return inlineForm(li,"edit");
+  if (act==="sub")    return inlineForm(li,"sub");
+  if (act==="cancel") return render();
+  if (act==="del"){ removeNode(li.dataset.id); save(); render(); return; }
+  if (act==="delgroup"){ S.groups = S.groups.filter(g => g.id!==grp.dataset.gid); save(); render(); return; }
+
+  if (act==="addtask" || act==="savesub"){
+    const f = b.closest(".form");
+    const t = f.querySelector('[data-k="t"]').value.trim(); if (!t) return;
+    const pid = act==="addtask" ? grp.dataset.gid : li.dataset.id;
+    addChild(pid, { id:uid(), title:t, coin:readCoins(f), weekly:f.querySelector('[data-k="w"]').checked,
+                    done:false, week:null, doneAt:null, children:[] });
+    save(); render(); return;
+  }
+  if (act==="savenode"){
+    const f = b.closest(".form"), n = findNode(li.dataset.id);
+    n.title = f.querySelector('[data-k="t"]').value.trim() || n.title;
+    n.coin  = readCoins(f);
+    n.weekly= f.querySelector('[data-k="w"]').checked;
+    save(); render(); return;
+  }
+  if (act==="buy"){
+    const r = S.rewards.find(x => x.id===card.dataset.rid);
+    if (!r || S.copper < r.price) return;
+    S.copper -= r.price; S.spent += r.price; r.bought = (r.bought||0)+1;
+    addLog("แลกรางวัล: "+r.name, -r.price);
+    if (navigator.vibrate) navigator.vibrate([10,40,20]);
+    save(); render(true); return;
+  }
+  if (act==="delreward"){ S.rewards = S.rewards.filter(x => x.id!==card.dataset.rid); save(); render(); return; }
+});
+
+$("gAdd").onclick = () => {
+  const v = $("gName").value.trim(); if (!v) return;
+  S.groups.push({id:uid(), name:v, children:[]}); $("gName").value=""; save(); render();
+};
+$("rAdd").onclick = () => {
+  const v = $("rName").value.trim(); if (!v) return;
+  const price = (+$("rG").value||0)*10000 + (+$("rS").value||0)*100 + (+$("rC").value||0);
+  S.rewards.push({id:uid(), name:v, price, bought:0}); $("rName").value=""; save(); render();
+};
+
+const tabs = { q:["tab-q","view-q"], s:["tab-s","view-s"], l:["tab-l","view-l"] };
+Object.keys(tabs).forEach(k => $(tabs[k][0]).onclick = () => {
+  Object.keys(tabs).forEach(j => {
+    $(tabs[j][0]).setAttribute("aria-selected", j===k);
+    $(tabs[j][1]).classList.toggle("hidden", j!==k);
+  });
+});
+
+$("expBtn").onclick = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}));
+  a.download = "quest-board-" + new Date().toISOString().slice(0,10) + ".json";
+  a.click();
+};
+$("impBtn").onclick = () => $("impFile").click();
+$("impFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { try{ S = JSON.parse(r.result); save(); resetWeekly(); render(); }catch(err){ alert("ไฟล์ไม่ถูกต้อง"); } };
+  r.readAsText(f);
+};
+$("wipeBtn").onclick = () => {
+  if (!confirm("ล้างข้อมูลทั้งหมด? กู้คืนไม่ได้")) return;
+  S = { copper:0, earned:0, spent:0, groups:[], rewards:[], log:[] };
+  save(); render();
+};
+
+/* ---------- นาฬิกาเดินจริง + ข้ามวัน/ข้ามสัปดาห์อัตโนมัติ ---------- */
+function heartbeat(){
+  tickClock();
+  const d = dayKey();
+  if (d !== curDay){                 // ข้ามวันตอนที่แอปเปิดค้างอยู่
+    curDay = d;
+    const w = weekKey();
+    if (w !== WK){ WK = w; resetWeekly(); }
+    render();
+  }
+}
+setInterval(heartbeat, 1000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) heartbeat(); });
+
+/* ---------- PWA ---------- */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+let deferred = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); deferred = e;
+  $("install").style.display = "flex";
+});
+$("installBtn").onclick = () => { $("install").style.display = "none"; if (deferred){ deferred.prompt(); deferred = null; } };
+$("installX").onclick = () => $("install").style.display = "none";
+
+/* ---------- boot ---------- */
+(async () => {
+  const saved = await store.load();
+  if (saved) S = Object.assign(S, saved);
+  else {
+    S.groups = [
+      { id:uid(), name:"ทุกวัน", children:[
+        { id:uid(), title:"ออกกำลังกาย 20 นาที", coin:25, weekly:false, done:false, week:null, doneAt:null, children:[] },
+        { id:uid(), title:"อ่านหนังสือ 10 หน้า", coin:15, weekly:false, done:false, week:null, doneAt:null, children:[] }
+      ]},
+      { id:uid(), name:"รายสัปดาห์", children:[
+        { id:uid(), title:"ทำความสะอาดห้อง", coin:120, weekly:true, done:false, week:null, doneAt:null, children:[
+          { id:uid(), title:"เก็บโต๊ะ", coin:20, weekly:true, done:false, week:null, doneAt:null, children:[] },
+          { id:uid(), title:"ซักผ้า", coin:40, weekly:true, done:false, week:null, doneAt:null, children:[] }
+        ]}
+      ]}
+    ];
+    S.rewards = [{ id:uid(), name:"ดูซีรีส์ 1 ตอน", price:100, bought:0 }];
+  }
+  resetWeekly();
+  render();
+})();
+</script>
+</body>
+</html>
